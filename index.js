@@ -189,7 +189,14 @@ function writeFileSync (filename, data, options) {
     fs.closeSync(fd)
     if (options.chown) fs.chownSync(tmpfile, options.chown.uid, options.chown.gid)
     if (options.mode) fs.chmodSync(tmpfile, options.mode)
-    fs.renameSync(tmpfile, filename)
+    try {
+      fs.renameSync(tmpfile, filename);
+    } catch (err) {
+      if (process.platform !== "win32" || err.errno !== -4048 || !fs.existsSync(filename)) {
+        // workaround for https://github.com/npm/write-file-atomic/issues/28
+        throw err;
+      }
+    }
     removeOnExit()
   } catch (err) {
     removeOnExit()
